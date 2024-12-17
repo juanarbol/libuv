@@ -26,6 +26,7 @@
 
 
 /* Ntdll function pointers */
+/* TODO: JUAN, LINK THE COMPARE HANDLES THING FOR THE THREAD COMPARISON HERE */
 sRtlGetVersion pRtlGetVersion;
 sRtlNtStatusToDosError pRtlNtStatusToDosError;
 sNtDeviceIoControlFile pNtDeviceIoControlFile;
@@ -45,6 +46,9 @@ sSetWinEventHook pSetWinEventHook;
 /* ws2_32.dll function pointer */
 uv_sGetHostNameW pGetHostNameW;
 
+/* kernelbase.dll function pointer */
+sCompareObjectHandles pCompareObjectHandles;
+
 /* api-ms-win-core-file-l2-1-4.dll function pointer */
 sGetFileInformationByName pGetFileInformationByName;
 
@@ -54,6 +58,7 @@ void uv__winapi_init(void) {
   HMODULE user32_module;
   HMODULE ws2_32_module;
   HMODULE api_win_core_file_module;
+  HMODULE kernesbase_module;
 
   ntdll_module = GetModuleHandleA("ntdll.dll");
   if (ntdll_module == NULL) {
@@ -140,5 +145,11 @@ void uv__winapi_init(void) {
   if (api_win_core_file_module != NULL) {
     pGetFileInformationByName = (sGetFileInformationByName)GetProcAddress(
         api_win_core_file_module, "GetFileInformationByName");
+  }
+
+  kernelbase_module = GetModuleHandleA("kernelbase.dll");
+  if (kernelbase_module != NULL) {
+    pCompareObjectHandles = (sCompareObjectHandles)GetProcAddress(
+        kernelbase_module, "CompareObjectHandles");
   }
 }

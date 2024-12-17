@@ -4828,6 +4828,9 @@ typedef int (WINAPI *uv_sGetHostNameW)
              int);
 extern uv_sGetHostNameW pGetHostNameW;
 
+/* kernelbase.dll function pointer */
+typedef BOOL(WINAPI* sCompareObjectHandles)(HANDLE, HANDLE);
+
 /* processthreadsapi.h */
 #if defined(__MINGW32__)
 WINBASEAPI
