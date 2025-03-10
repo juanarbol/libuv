@@ -661,7 +661,11 @@ static void uv__drain(uv_stream_t* stream) {
 
 static ssize_t uv__writev(int fd, struct iovec* vec, size_t n) {
   if (n == 1)
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    return send(fd, vec->iov_base, vec->iov_len, MSG_EOF);
+#else
     return write(fd, vec->iov_base, vec->iov_len);
+#endif
   else
     return writev(fd, vec, n);
 }
