@@ -94,6 +94,7 @@ void uv__stream_init(uv_loop_t* loop,
   stream->accepted_fd = -1;
   stream->queued_fds = NULL;
   stream->delayed_error = 0;
+  stream->sent_msgeof = 0;
   uv__queue_init(&stream->write_queue);
   uv__queue_init(&stream->write_completed_queue);
   stream->write_queue_size = 0;
@@ -645,14 +646,26 @@ static void uv__drain(uv_stream_t* stream) {
     uv__req_unregister(stream->loop);
 
     err = 0;
+
+    /* Avoid calling shutdown if MSG_EOF is already sent.
+     * This is gonna happen only in macOS and BSD.
+     * Refs: https://github.com/libuv/libuv/issues/3603 */
+    if (stream->sent_eof)
+      goto done;
+
     if (stream->flags & UV_HANDLE_CLOSING)
       /* The user destroyed the stream before we got to do the shutdown. */
       err = UV_ECANCELED;
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    else if (stream->sent_msgeof && shutdown(uv__stream_fd(stream), SHUT_WR))
+#else
     else if (shutdown(uv__stream_fd(stream), SHUT_WR))
+#endif
       err = UV__ERR(errno);
     else /* Success. */
       stream->flags |= UV_HANDLE_SHUT;
 
+done:
     if (req->cb != NULL)
       req->cb(req, err);
   }
@@ -661,7 +674,11 @@ static void uv__drain(uv_stream_t* stream) {
 
 static ssize_t uv__writev(int fd, struct iovec* vec, size_t n) {
   if (n == 1)
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    return send(fd, vec->iov_base, vec->iov_len, MSG_EOF);
+#else
     return write(fd, vec->iov_base, vec->iov_len);
+#endif
   else
     return writev(fd, vec, n);
 }
@@ -809,6 +826,7 @@ static int uv__try_write(uv_stream_t* stream,
       n = sendmsg(uv__stream_fd(stream), &msg, 0);
     while (n == -1 && errno == EINTR);
   } else {
+    if (iovcnt == 1) stream->sent_msgeof = 1;
     do
       n = uv__writev(uv__stream_fd(stream), iov, iovcnt);
     while (n == -1 && errno == EINTR);

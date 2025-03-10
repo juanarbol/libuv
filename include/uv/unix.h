@@ -294,7 +294,9 @@ typedef struct {
   uv_connection_cb connection_cb;                                             \
   int delayed_error;                                                          \
   int accepted_fd;                                                            \
+  int sent_msgeof;                                                            \
   void* queued_fds;                                                           \
+  int sent_eof;                                                               \
   UV_STREAM_PRIVATE_PLATFORM_FIELDS                                           \
 
 #define UV_TCP_PRIVATE_FIELDS /* empty */
