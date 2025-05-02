@@ -4150,35 +4150,40 @@ typedef struct _FILE_STAT_BASIC_INFORMATION {
 } FILE_STAT_BASIC_INFORMATION;
 #endif
 
-typedef struct _REPARSE_DATA_BUFFER {
-  ULONG  ReparseTag;
-  USHORT ReparseDataLength;
-  USHORT Reserved;
-  union {
-    struct {
-      USHORT SubstituteNameOffset;
-      USHORT SubstituteNameLength;
-      USHORT PrintNameOffset;
-      USHORT PrintNameLength;
-      ULONG Flags;
-      WCHAR PathBuffer[1];
-    } SymbolicLinkReparseBuffer;
-    struct {
-      USHORT SubstituteNameOffset;
-      USHORT SubstituteNameLength;
-      USHORT PrintNameOffset;
-      USHORT PrintNameLength;
-      WCHAR PathBuffer[1];
-    } MountPointReparseBuffer;
-    struct {
-      UCHAR  DataBuffer[1];
-    } GenericReparseBuffer;
-    struct {
-      ULONG StringCount;
-      WCHAR StringList[1];
-    } AppExecLinkReparseBuffer;
-  };
-} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+/* MinGW already has a definition for REPARSE_DATA_BUFFER, but mingw-w64 does
+ * not.
+ */
+#if defined(_MSC_VER) || defined(__MINGW64_VERSION_MAJOR)
+  typedef struct _REPARSE_DATA_BUFFER {
+    ULONG  ReparseTag;
+    USHORT ReparseDataLength;
+    USHORT Reserved;
+    union {
+      struct {
+        USHORT SubstituteNameOffset;
+        USHORT SubstituteNameLength;
+        USHORT PrintNameOffset;
+        USHORT PrintNameLength;
+        ULONG Flags;
+        WCHAR PathBuffer[1];
+      } SymbolicLinkReparseBuffer;
+      struct {
+        USHORT SubstituteNameOffset;
+        USHORT SubstituteNameLength;
+        USHORT PrintNameOffset;
+        USHORT PrintNameLength;
+        WCHAR PathBuffer[1];
+      } MountPointReparseBuffer;
+      struct {
+        UCHAR  DataBuffer[1];
+      } GenericReparseBuffer;
+      struct {
+        ULONG StringCount;
+        WCHAR StringList[1];
+      } AppExecLinkReparseBuffer;
+    };
+  } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+#endif
 
 typedef struct _IO_STATUS_BLOCK {
   union {
@@ -4670,6 +4675,15 @@ typedef NTSTATUS (NTAPI *sNtQueryInformationProcess)
 
 #ifndef SYMBOLIC_LINK_FLAG_DIRECTORY
 # define SYMBOLIC_LINK_FLAG_DIRECTORY 0x1
+#endif
+
+#if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
+  typedef struct _OVERLAPPED_ENTRY {
+      ULONG_PTR lpCompletionKey;
+      LPOVERLAPPED lpOverlapped;
+      ULONG_PTR Internal;
+      DWORD dwNumberOfBytesTransferred;
+  } OVERLAPPED_ENTRY, *LPOVERLAPPED_ENTRY;
 #endif
 
 /* from wincon.h */
