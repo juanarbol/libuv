@@ -43,8 +43,15 @@ static void close_cb(uv_handle_t* handle) {
 
 
 static void sv_send_cb(uv_udp_send_t* req, int status) {
+  int ok = (status == 0 ||
+            status == UV_ENETUNREACH ||
+            status == UV_EPERM);
   ASSERT_NOT_NULL(req);
-  ASSERT(status == 0 || status == UV_ENETUNREACH || status == UV_EPERM);
+#ifdef __APPLE__
+  /* macos-15 does not grant permission to local network access */
+  ok = ok || status == UV_EHOSTUNREACH;
+#endif
+  ASSERT(ok);
   CHECK_HANDLE(req->handle);
 
   sv_send_cb_called++;

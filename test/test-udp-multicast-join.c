@@ -37,6 +37,7 @@ static uv_udp_send_t req;
 static uv_udp_send_t req_ss;
 
 static int darwin_ebusy_errors;
+static int darwin_ehostunreach_errors;
 static int cl_recv_cb_called;
 static int sv_send_cb_called;
 static int close_cb_called;
@@ -60,7 +61,14 @@ static void close_cb(uv_handle_t* handle) {
 
 static void sv_send_cb(uv_udp_send_t* req, int status) {
   ASSERT_NOT_NULL(req);
+#ifdef __APPLE__
+  /* macos-15 does not grant permission to local network access */
+  ASSERT(status == 0 || status == UV_ENETUNREACH);
+  if (status == UV_ENETUNREACH)
+    darwin_ehostunreach_errors++;
+#else
   ASSERT_OK(status);
+#endif
   CHECK_HANDLE(req->handle);
 
   sv_send_cb_called++;
@@ -73,7 +81,7 @@ static void sv_send_cb(uv_udp_send_t* req, int status) {
 static int do_send(uv_udp_send_t* send_req) {
   uv_buf_t buf;
   struct sockaddr_in addr;
-  
+
   buf = uv_buf_init("PING", 4);
 
   ASSERT_OK(uv_ip4_addr(MULTICAST_ADDR, TEST_PORT, &addr));
@@ -191,6 +199,9 @@ TEST_IMPL(udp_multicast_join) {
 
   if (darwin_ebusy_errors > 0)
     RETURN_SKIP("Unexplained macOS IP_ADD_SOURCE_MEMBERSHIP EBUSY bug");
+
+  if (darwin_ehostunreach_errors > 0)
+    RETURN_SKIP("macos-15 does not grant permission to local network access");
 
   ASSERT_EQ(2, cl_recv_cb_called);
   ASSERT_EQ(2, sv_send_cb_called);

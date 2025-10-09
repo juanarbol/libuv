@@ -12,6 +12,7 @@ on:
     branches:
       - v[0-9].*
       - master
+      - juan/macos-15-testing
 
 jobs:
   build-linux:

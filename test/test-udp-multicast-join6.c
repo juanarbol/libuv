@@ -74,7 +74,12 @@ static void close_cb(uv_handle_t* handle) {
 
 static void sv_send_cb(uv_udp_send_t* req, int status) {
   ASSERT_NOT_NULL(req);
+#ifdef __APPLE__
+  /* macos-15 does not grant permission to local network access */
+  ASSERT(status == 0 || status == UV_ENETUNREACH);
+#else
   ASSERT_OK(status);
+#endif
   CHECK_HANDLE(req->handle);
 
   sv_send_cb_called++;
@@ -87,7 +92,7 @@ static void sv_send_cb(uv_udp_send_t* req, int status) {
 static int do_send(uv_udp_send_t* send_req) {
   uv_buf_t buf;
   struct sockaddr_in6 addr;
-  
+
   buf = uv_buf_init("PING", 4);
 
   ASSERT_OK(uv_ip6_addr(MULTICAST_ADDR, TEST_PORT, &addr));
@@ -208,7 +213,7 @@ TEST_IMPL(udp_multicast_join6) {
 #endif
   r = uv_udp_recv_start(&server, alloc_cb, cl_recv_cb);
   ASSERT_OK(r);
-  
+
   r = do_send(&req);
   ASSERT_OK(r);
 
