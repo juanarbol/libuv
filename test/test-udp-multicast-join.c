@@ -189,6 +189,8 @@ TEST_IMPL(udp_multicast_join) {
 
   r = do_send(&req);
   ASSERT_OK(r);
+  if (darwin_ehostunreach_errors > 0)
+    RETURN_SKIP("macos-15 does not grant permission to local network access");
 
   ASSERT_OK(close_cb_called);
   ASSERT_OK(cl_recv_cb_called);
@@ -199,9 +201,6 @@ TEST_IMPL(udp_multicast_join) {
 
   if (darwin_ebusy_errors > 0)
     RETURN_SKIP("Unexplained macOS IP_ADD_SOURCE_MEMBERSHIP EBUSY bug");
-
-  if (darwin_ehostunreach_errors > 0)
-    RETURN_SKIP("macos-15 does not grant permission to local network access");
 
   ASSERT_EQ(2, cl_recv_cb_called);
   ASSERT_EQ(2, sv_send_cb_called);
