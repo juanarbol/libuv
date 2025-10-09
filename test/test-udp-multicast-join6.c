@@ -76,7 +76,7 @@ static void sv_send_cb(uv_udp_send_t* req, int status) {
   ASSERT_NOT_NULL(req);
 #ifdef __APPLE__
   /* macos-15 does not grant permission to local network access */
-  ASSERT(status == 0 || status == UV_ENETUNREACH);
+  ASSERT(status == 0 || status == UV_EHOSTUNREACH);
 #else
   ASSERT_OK(status);
 #endif
