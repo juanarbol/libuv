@@ -81,6 +81,7 @@ static void sv_send_cb(uv_udp_send_t* req, int status) {
   if (status == UV_EHOSTUNREACH) {
     darwin_ehostunreach_errors++;
     uv_close((uv_handle_t*) req->handle, close_cb);
+    uv_stop(uv_default_loop());
     return;
   }
 #else
