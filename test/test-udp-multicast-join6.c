@@ -26,8 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int darwin_ehostunreach_errors;
-
 #define CHECK_HANDLE(handle) \
   ASSERT_NE((uv_udp_t*)(handle) == &server || (uv_udp_t*)(handle) == &client, 0)
 
@@ -56,6 +54,8 @@ static int sv_send_cb_called;
 
 static int close_cb_called;
 
+static int darwin_ehostunreach_errors;
+
 static void alloc_cb(uv_handle_t* handle,
                      size_t suggested_size,
                      uv_buf_t* buf) {
@@ -78,8 +78,11 @@ static void sv_send_cb(uv_udp_send_t* req, int status) {
 #ifdef __APPLE__
   /* macos-15 does not grant permission to local network access */
   ASSERT(status == 0 || status == UV_EHOSTUNREACH);
-  if (status == UV_EHOSTUNREACH)
+  if (status == UV_EHOSTUNREACH) {
     darwin_ehostunreach_errors++;
+    uv_close((uv_handle_t*) req->handle, close_cb);
+    return;
+  }
 #else
   ASSERT_OK(status);
 #endif
@@ -219,8 +222,6 @@ TEST_IMPL(udp_multicast_join6) {
 
   r = do_send(&req);
   ASSERT_OK(r);
-  if (darwin_ehostunreach_errors > 0)
-    RETURN_SKIP("Local network access not granted.");
 
   ASSERT_OK(close_cb_called);
   ASSERT_OK(cl_recv_cb_called);
@@ -228,6 +229,9 @@ TEST_IMPL(udp_multicast_join6) {
 
   /* run the loop till all events are processed */
   uv_run(uv_default_loop(), UV_RUN_DEFAULT);
+
+  if (darwin_ehostunreach_errors > 0)
+    RETURN_SKIP("Local network access not granted.");
 
   ASSERT_EQ(2, cl_recv_cb_called);
   ASSERT_EQ(2, sv_send_cb_called);
