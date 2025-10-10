@@ -65,10 +65,13 @@ static void sv_send_cb(uv_udp_send_t* req, int status) {
   ASSERT(status == 0 || status == UV_EHOSTUNREACH);
   CHECK_HANDLE(req->handle);
 
-  if (status == UV_EHOSTUNREACH)
-    darwin_ehostunreach_errors++;
-
   sv_send_cb_called++;
+
+  if (status == UV_EHOSTUNREACH) {
+    darwin_ehostunreach_errors++;
+    uv_close((uv_handle_t*)&server, close_cb);
+    return;
+  }
 
   if (sv_send_cb_called == 2)
     uv_close((uv_handle_t*) req->handle, close_cb);
