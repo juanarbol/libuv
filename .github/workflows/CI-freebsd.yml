@@ -42,5 +42,4 @@ jobs:
             mkdir build
             cd build
             ../configure
-            gmake -j2
-            ./uv_run_tests_a
+            gmake -j2 check
