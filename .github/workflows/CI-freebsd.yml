@@ -42,4 +42,9 @@ jobs:
             mkdir build
             cd build
             ../configure
-            gmake -j2 check
+            gmake -j2
+            pw useradd -n libuvci -m -s /bin/sh
+            # Keep source and destination ownership consistent for fs_copyfile.
+            ci_group=$(id -gn libuvci)
+            chown -R "libuvci:$ci_group" "$GITHUB_WORKSPACE"
+            su - libuvci -c "cd '$GITHUB_WORKSPACE/build' && gmake check"
