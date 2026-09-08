@@ -42,3 +42,6 @@ jobs:
             cd build
             ../configure
             gmake -j2
+
+      - name: Test
+        run: build/uv_run_tests_a
