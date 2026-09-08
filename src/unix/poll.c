@@ -24,6 +24,7 @@
 
 #include <unistd.h>
 #include <assert.h>
+#include <stdio.h>
 
 
 void uv__poll_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
@@ -84,8 +85,10 @@ int uv_poll_init(uv_loop_t* loop, uv_poll_t* handle, int fd) {
     return UV_EEXIST;
 
   err = uv__io_check_fd(loop, fd);
-  if (err)
+  if (err) {
+    printf("uv__io_check_fd failed with error: %d\n", err);
     return err;
+  }
 
   /* If ioctl(FIONBIO) reports ENOTTY, try fcntl(F_GETFL) + fcntl(F_SETFL).
    * Workaround for e.g. kqueue fds not supporting ioctls.
@@ -96,8 +99,10 @@ int uv_poll_init(uv_loop_t* loop, uv_poll_t* handle, int fd) {
     err = uv__nonblock_fcntl(fd, 1);
 #endif
 
-  if (err)
+  if (err) {
+    printf("uv__nonblock failed with error: %d\n", err);
     return err;
+  }
 
   uv__handle_init(loop, (uv_handle_t*) handle, UV_POLL);
   uv__io_init(&handle->io_watcher, UV__POLL_IO, fd);
