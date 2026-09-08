@@ -33,6 +33,10 @@
 # include <fcntl.h>
 #endif
 
+#if defined(__FreeBSD__)
+# include <sys/un.h>
+#endif
+
 static uv_pipe_t pipe_client;
 static uv_pipe_t pipe_server;
 static uv_connect_t connect_req;
@@ -379,7 +383,7 @@ static void long_path_connect_cb(uv_connect_t* req, int status) {
 #endif
 
 TEST_IMPL(pipe_getsockname_long_path) {
-#if !defined(SOCK_MAXADDRLEN) || defined(__FreeBSD__)
+#ifndef SOCK_MAXADDRLEN
   RETURN_SKIP("long unix paths not supported on this platform");
 #else
   uv_loop_t* loop;
@@ -406,7 +410,11 @@ TEST_IMPL(pipe_getsockname_long_path) {
   r = uv_pipe_getsockname(&pipe_server, name, &len);
 
   ASSERT_OK(r);
+#ifndef __FreeBSD__
   ASSERT_EQ(len, strlen(path));
+#else
+  ASSERT_EQ(len, sizeof(((struct sockaddr_un*) 0)->sun_path));
+#endif
   ASSERT_MEM_EQ(path, name, len);
 
   r = uv_listen((uv_stream_t*) &pipe_server, 0, pipe_server_connection_cb);
